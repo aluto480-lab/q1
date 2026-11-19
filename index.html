@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-stage maze · wasd · quiz</title>
+<style>
+  * {
+    box-sizing: border-box;
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  }
+  body {
+    background: linear-gradient(145deg, #1a2639 0%, #2c3e50 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 16px;
+  }
+  .game-container {
+    background: #0f172a;
+    border-radius: 42px;
+    padding: 28px 32px 32px 32px;
+    box-shadow: 0 25px 40px rgba(0,0,0,0.7), inset 0 1px 4px rgba(255,255,255,0.1);
+    max-width: 750px;
+    width: fit-content;
+    margin: 0 auto;
+  }
+  h1 {
+    text-align: center;
+    margin: 0 0 10px 0;
+    font-weight: 500;
+    font-size: 1.9rem;
+    letter-spacing: 2px;
+    color: #e2e8f0;
+    text-shadow: 0 2px 5px #00000060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  h1 span {
+    background: #2d3b55;
+    padding: 2px 18px;
+    border-radius: 40px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #b0c4de;
+    box-shadow: inset 0 1px 5px #00000050;
+  }
+  .maze-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 24px;
+    box-shadow: 0 0 0 2px #3e5a7a, 0 15px 25px -8px black;
+    background: #0b111e;
+    width: 100%;
+    height: auto;
+    max-width: 600px;
+    image-rendering: crisp-edges;
+  }
+  .info-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #cbd5e1;
+    background: #1e293b;
+    padding: 10px 22px;
+    border-radius: 60px;
+    margin: 16px 0 14px 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    box-shadow: inset 0 2px 8px #00000040, 0 3px 0 #0b0f15;
+  }
+  .stage-badge {
+    background: #3b4f6b;
+    padding: 5px 18px;
+    border-radius: 30px;
+    color: #f1f5f9;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .status {
+    color: #a5d6ff;
+    font-weight: 500;
+    text-shadow: 0 0 6px #2f6f9f;
+  }
+  .quiz-area {
+    background: #1e293b;
+    border-radius: 28px;
+    padding: 24px 26px;
+    margin-top: 16px;
+    border: 1px solid #3a506c;
+    box-shadow: inset 0 1px 6px #00000060;
+  }
+  .quiz-question {
+    color: #e6edf7;
+    font-size: 1.15rem;
+    margin-bottom: 18px;
+    font-weight: 500;
+    line-height: 1.5;
+    background: #0f172a;
+    padding: 16px 20px;
+    border-radius: 18px;
+    border-left: 6px solid #3b82f6;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .option-btn {
+    background: #2a3a52;
+    border: none;
+    border-radius: 60px;
+    padding: 14px 22px;
+    text-align: left;
+    font-size: 1rem;
+    color: #e2e8f0;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 4px 0 #0f141c, 0 2px 10px #00000040;
+    border: 1px solid #4b6589;
+    letter-spacing: 0.2px;
+  }
+  .option-btn:hover:not(:disabled) {
+    background: #3b5170;
+    transform: scale(1.01);
+    border-color: #6f8db0;
+  }
+  .option-btn:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #0f141c;
+  }
+  .option-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+  }
+  .restart-message {
+    color: #ffb3b3;
+    font-weight: 600;
+    background: #4e1e1e;
+    padding: 14px 18px;
+    border-radius: 20px;
+    margin-top: 15px;
+    border-left: 6px solid #f97373;
+    text-align: center;
+  }
+  .success-message {
+    background: #0b2f1e;
+    color: #b5f7c3;
+    padding: 20px 24px;
+    border-radius: 24px;
+    border-left: 6px solid #4ade80;
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: inset 0 1px 8px #00000040;
+  }
+  .password {
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: 8px;
+    color: #facc15;
+    background: #00000060;
+    padding: 12px 14px;
+    border-radius: 18px;
+    display: inline-block;
+    margin-top: 12px;
+    text-shadow: 0 0 10px #fbbf24;
+  }
+  .hidden {
+    display: none;
+  }
+  .small-note {
+    color: #8fa3bb;
+    font-size: 0.9rem;
+    margin-top: 12px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="game-container">
+  <h1>MAZE <span>3 STAGES</span></h1>
+
+  <div class="maze-wrapper">
+    <canvas id="mazeCanvas" width="500" height="500"></canvas>
+  </div>
+
+  <div class="info-panel">
+    <div class="stage-badge" id="stageDisplay">Stage 1 / 3</div>
+    <div class="status" id="statusMessage">Use WASD to move</div>
+  </div>
+
+  <!-- QUIZ AREA (dynamic) -->
+  <div id="quizContainer" class="quiz-area hidden"></div>
+
+  <!-- Restart / success messages placed below quiz -->
+  <div id="feedbackArea" class="hidden"></div>
+</div>
+
+<script>
+  (function() {
+    // ---------- MAZE CONFIG (each stage 11x11) ----------
+    // 0 = free, 1 = wall, 2 = player start, 3 = goal
+    const STAGE_CONFIGS = [
+      // Stage 1 - simple
+      {
+        grid: [
+          [1,1,1,1,1,1,1,1,1,1,1],
+          [1,2,0,0,0,0,0,0,0,3,1],
+          [1,0,1,1,1,1,1,1,0,1,1],
+          [1,0,1,0,0,0,0,1,0,0,1],
+          [1,0,1,0,1,1,0,1,1,0,1],
+          [1,0,1,0,1,0,0,1,0,0,1],
+          [1,0,1,0,1,1,1,1,0,1,1],
+          [1,0,1,0,0,0,0,0,0,1,1],
+          [1,0,1,1,1,1,1,1,0,0,1],
+          [1,0,0,0,0,0,0,0,0,0,1],
+          [1,1,1,1,1,1,1,1,1,1,1]
+        ]
+      },
+      // Stage 2 - more walls
+      {
+        grid: [
+          [1,1,1,1,1,1,1,1,1,1,1],
+          [1,2,0,0,0,1,0,0,0,3,1],
+          [1,0,1,1,0,1,0,1,0,1,1],
+          [1,0,1,0,0,0,0,1,0,0,1],
+          [1,0,1,0,1,1,1,1,1,0,1],
+          [1,0,0,0,1,0,0,0,1,0,1],
+          [1,1,1,0,1,0,1,0,1,0,1],
+          [1,0,0,0,1,0,1,0,0,0,1],
+          [1,0,1,1,1,0,1,1,1,0,1],
+          [1,0,0,0,0,0,0,0,0,0,1],
+          [1,1,1,1,1,1,1,1,1,1,1]
+        ]
+      },
+      // Stage 3 - trickier
+      {
+        grid: [
+          [1,1,1,1,1,1,1,1,1,1,1],
+          [1,2,0,0,1,0,0,0,0,3,1],
+          [1,0,1,0,1,0,1,1,1,0,1],
+          [1,0,1,0,0,0,0,0,1,0,1],
+          [1,0,1,1,1,1,1,0,1,0,1],
+          [1,0,0,0,0,0,1,0,1,0,1],
+          [1,1,1,1,1,0,1,0,0,0,1],
+          [1,0,0,0,1,0,1,1,1,1,1],
+          [1,0,1,0,0,0,0,0,0,0,1],
+          [1,0,0,0,1,1,1,1,1,0,1],
+          [1,1,1,1,1,1,1,1,1,1,1]
+        ]
+      }
+    ];
+
+    // ---------- QUIZ DATA ----------
+    const QUIZZES = [
+      { // stage 1
+        question: `The following code is supposed to calculate and print the average of three numbers, but it has a bug. What is the bug?\n\nnumbers = [10, 20, 30]\ntotal = 0\nfor num in numbers:\n    total += num\naverage = total / len(numbers)\nprint("The average is: " + average)`,
+        options: [
+          'A) total should be initialized to 1 instead of 0',
+          'B) The for loop should use range(len(numbers)) instead of iterating directly',
+          'C) average is a float, but it\'s being concatenated to a string with +',
+          'D) len(numbers) returns the wrong value'
+        ],
+        correctIndex: 2, // C
+        wrongRestart: true
+      },
+      { // stage 2
+        question: `What is the kinked demand curve theory?`,
+        options: [
+          'A) A model where firms ignore each other\'s pricing decisions',
+          'B) A model where rivals match price cuts but ignore price increases, leading to price rigidity',
+          'C) A demand curve that is perfectly elastic at all prices',
+          'D) A theory that monopoly always sets price at the kink'
+        ],
+        correctIndex: 1, // B
+        wrongRestart: true
+      },
+      { // stage 3
+        question: `I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. I have roads, but no cars. What am I?`,
+        options: [
+          'A) A dream',
+          'B) A painting',
+          'C) A map',
+          'D) A photograph'
+        ],
+        correctIndex: 2, // C
+        wrongRestart: true
+      }
+    ];
+
+    // ---------- GAME STATE ----------
+    let currentStage = 0;           // 0-indexed
+    let mazeGrid = [];             // current stage grid (copy)
+    let playerPos = { x: 0, y: 0 };
+    let goalPos = { x: 0, y: 0 };
+    let gameActive = true;         // true while in maze (no quiz)
+    let quizAnswered = false;      // avoid double answer
+    let pendingRestart = false;
+
+    // DOM elements
+    const canvas = document.getElementById('mazeCanvas');
+    const ctx = canvas.getContext('2d');
+    const stageDisplay = document.getElementById('stageDisplay');
+    const statusMessage = document.getElementById('statusMessage');
+    const quizContainer = document.getElementById('quizContainer');
+    const feedbackArea = document.getElementById('feedbackArea');
+
+    const TILE_SIZE = 45; // 500/11 ≈ 45.45 but we use 45 and fit
+
+    // ---------- UTILITIES ----------
+    function deepCopyGrid(grid) {
+      return grid.map(row => [...row]);
+    }
+
+    function loadStage(stageIndex) {
+      currentStage = stageIndex;
+      const config = STAGE_CONFIGS[stageIndex];
+      mazeGrid = deepCopyGrid(config.grid);
+
+      // find start (2) and goal (3)
+      for (let r = 0; r < 11; r++) {
+        for (let c = 0; c < 11; c++) {
+          if (mazeGrid[r][c] === 2) {
+            playerPos = { x: c, y: r };
+            mazeGrid[r][c] = 0; // make walkable
+          } else if (mazeGrid[r][c] === 3) {
+            goalPos = { x: c, y: r };
+            // keep as 3 for drawing
+          }
+        }
+      }
+
+      // reset flags
+      gameActive = true;
+      quizAnswered = false;
+      pendingRestart = false;
+
+      // UI
+      stageDisplay.textContent = `Stage ${stageIndex + 1} / 3`;
+      statusMessage.textContent = 'Use WASD to move';
+      quizContainer.classList.add('hidden');
+      quizContainer.innerHTML = '';
+      feedbackArea.classList.add('hidden');
+      feedbackArea.innerHTML = '';
+
+      drawMaze();
+    }
+
+    function drawMaze() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // draw tiles
+      for (let row = 0; row < 11; row++) {
+        for (let col = 0; col < 11; col++) {
+          const x = col * TILE_SIZE;
+          const y = row * TILE_SIZE;
+          const cell = mazeGrid[row][col];
+
+          // wall
+          if (cell === 1) {
+            ctx.fillStyle = '#1f2a3f';
+            ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#2e3f5e';
+            ctx.fillRect(x+3, y+3, TILE_SIZE-6, TILE_SIZE-6);
+            ctx.fillStyle = '#1b263b';
+            ctx.fillRect(x+6, y+6, TILE_SIZE-12, TILE_SIZE-12);
+          } else {
+            // floor
+            ctx.fillStyle = '#0e141f';
+            ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#182233';
+            ctx.fillRect(x+2, y+2, TILE_SIZE-4, TILE_SIZE-4);
+          }
+
+          // goal (3)
+          if (cell === 3) {
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE*0.3, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#ffd966';
+            ctx.beginPath();
+            ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE*0.2, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#b45309';
+            ctx.beginPath();
+            ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE*0.1, 0, 2*Math.PI);
+            ctx.fill();
+          }
+        }
+      }
+
+      // draw player
+      const px = playerPos.x * TILE_SIZE;
+      const py = playerPos.y * TILE_SIZE;
+      ctx.shadowColor = '#3b82f6';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#60a5fa';
+      ctx.beginPath();
+      ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, TILE_SIZE*0.3, 0, 2*Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#bfdbfe';
+      ctx.beginPath();
+      ctx.arc(px + TILE_SIZE/2 - 3, py + TILE_SIZE/2 - 3, TILE_SIZE*0.1, 0, 2*Math.PI);
+      ctx.fill();
+    }
+
+    // ---------- MOVEMENT ----------
+    function tryMove(dx, dy) {
+      if (!gameActive) return;
+      const newX = playerPos.x + dx;
+      const newY = playerPos.y + dy;
+
+      // bounds
+      if (newX < 0 || newX >= 11 || newY < 0 || newY >= 11) return;
+      // wall?
+      if (mazeGrid[newY][newX] === 1) return;
+
+      // move
+      playerPos.x = newX;
+      playerPos.y = newY;
+      drawMaze();
+
+      // check goal
+      if (newX === goalPos.x && newY === goalPos.y) {
+        gameActive = false;
+        statusMessage.textContent = '⭐ Stage cleared! Answer the question.';
+        showQuiz();
+      }
+    }
+
+    // ---------- QUIZ LOGIC ----------
+    function showQuiz() {
+      const quiz = QUIZZES[currentStage];
+      quizContainer.innerHTML = '';
+      quizContainer.classList.remove('hidden');
+      quizAnswered = false;
+
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.textContent = quiz.question;
+      quizContainer.appendChild(qDiv);
+
+      const optsDiv = document.createElement('div');
+      optsDiv.className = 'options';
+
+      quiz.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = optText;
+        btn.dataset.index = idx;
+        btn.addEventListener('click', () => handleAnswer(idx, btn, optsDiv));
+        optsDiv.appendChild(btn);
+      });
+
+      quizContainer.appendChild(optsDiv);
+    }
+
+    function handleAnswer(selectedIdx, clickedBtn, optsContainer) {
+      if (quizAnswered) return;
+      quizAnswered = true;
+
+      const quiz = QUIZZES[currentStage];
+      const isCorrect = (selectedIdx === quiz.correctIndex);
+
+      // disable all buttons
+      const allBtns = optsContainer.querySelectorAll('.option-btn');
+      allBtns.forEach(btn => btn.disabled = true);
+
+      if (isCorrect) {
+        // highlight correct
+        clickedBtn.style.background = '#1e5f3e';
+        clickedBtn.style.borderColor = '#4ade80';
+        clickedBtn.style.color = '#d9f99d';
+
+        // proceed to next stage or finish
+        if (currentStage < 2) {
+          // next stage after short delay
+          setTimeout(() => {
+            loadStage(currentStage + 1);
+          }, 500);
+        } else {
+          // ALL STAGES COMPLETE
+          statusMessage.textContent = '🏆 All stages cleared!';
+          quizContainer.classList.add('hidden');
+
+          // show password
+          feedbackArea.classList.remove('hidden');
+          feedbackArea.innerHTML = `
+            <div class="success-message">
+              🎉 CONGRATULATIONS! 🎉<br>
+              You answered all 3 questions correctly.<br>
+              <span class="password">45810</span>
+            </div>
+          `;
+        }
+      } else {
+        // wrong answer -> restart entire game
+        clickedBtn.style.background = '#7f1d1d';
+        clickedBtn.style.borderColor = '#f87171';
+
+        // mark correct answer for learning
+        allBtns.forEach((btn, idx) => {
+          if (idx === quiz.correctIndex) {
+            btn.style.background = '#1e5f3e';
+            btn.style.borderColor = '#4ade80';
+          }
+        });
+
+        // show restart message
+        feedbackArea.classList.remove('hidden');
+        feedbackArea.innerHTML = `
+          <div class="restart-message">
+            ❌ Wrong answer. Restarting from Stage 1...
+          </div>
+        `;
+
+        // restart whole game after 1.2s
+        setTimeout(() => {
+          feedbackArea.classList.add('hidden');
+          loadStage(0); // back to stage 1
+        }, 1300);
+      }
+    }
+
+    // ---------- KEYBOARD ----------
+    function handleKey(e) {
+      const key = e.key.toLowerCase();
+      if (!gameActive) return; // no movement while quiz
+
+      let dx = 0, dy = 0;
+      if (key === 'w') dy = -1;
+      else if (key === 's') dy = 1;
+      else if (key === 'a') dx = -1;
+      else if (key === 'd') dx = 1;
+      else return;
+
+      e.preventDefault(); // prevent scrolling
+      tryMove(dx, dy);
+    }
+
+    // ---------- INIT ----------
+    window.addEventListener('load', () => {
+      loadStage(0);
+      window.addEventListener('keydown', handleKey);
+      // prevent default on arrows to avoid scroll (safety)
+      window.addEventListener('keydown', (e) => {
+        if (['w','a','s','d','W','A','S','D'].includes(e.key)) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    });
+
+    // focus canvas for keyboard (but we listen on window)
+    canvas.setAttribute('tabindex', '0');
+    canvas.style.outline = 'none';
+
+  })();
+</script>
+</body>
+</html>
